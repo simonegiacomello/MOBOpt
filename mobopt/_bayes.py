@@ -6,6 +6,7 @@ import matplotlib.pyplot as pl
 # from sklearn.gaussian_process import GaussianProcessRegressor as GPR
 from sklearn.gaussian_process.kernels import Matern
 
+from scipy.stats import norm
 from scipy.spatial.distance import directed_hausdorff as HD
 from deap.benchmarks.tools import hypervolume
 from warnings import warn
@@ -14,7 +15,7 @@ from ._wrapper import GaussianProcessWrapper as GPR
 from ._NSGA2 import NSGAII
 from .metrics import GD, Spread2D, Coverage
 from ._target_space import TargetSpace
-from ._helpers import plot_1dgp
+from ._helpers import plot_1dgp, nondominated_pts, sms_hv
 
 
 class ConstraintError(Exception):
@@ -255,6 +256,94 @@ class MOBayesianOpt(object):
 
         return
 
+    def maximize_smsego(self,
+                        n_iter=100,
+                        n_pts=100
+                        ):
+        # Allocate necessary space
+        if self.N_init_points + n_iter > self.space._n_alloc_rows:
+            self.space._allocate(self.N_init_points + n_iter)
+
+
+        self.vprint("Start optimization loop")
+
+        level = -norm.ppf(0.5*(0.5**(1/self.NObj)))
+
+        for i in range(n_iter):
+
+            self.vprint(i, " of ", n_iter)
+            # GP fit
+            for j in range(self.NObj):
+                yy = self.space.f[:, j]
+                self.GP[j].fit(self.space.x, yy)
+
+            # Pareto Front calculation with Pygmo
+            mask = nondominated_pts(self.space.f)
+            pfa = self.space.f[mask,:]
+            pfs = self.space.x[mask,:]
+            # Generation of the evaluation points randomly
+            new_pts = np.asarray(self.space.random_points(n_pts))
+            #new_pts, _, _ = NSGAII(self.NObj,
+            #                             self.__ObjectiveGP,
+            #                             self.pbounds,
+            #                             MU=n_pts)
+
+            # Epsilon
+            c = 1 - 1/(2**self.NObj)
+            eps = (pfa.max() - pfa.min())/(n_pts + c*(n_iter - i))
+
+            # Reference Point
+            ref_point = list(np.max(pfa, axis=0) + 1)
+            # Initialize hypervolume
+            #new_pts = np.asarray(new_pts)
+            HV = sms_hv(pfa, ref_point)
+            idxs = np.zeros(shape=(len(new_pts)))
+
+            for k in range(new_pts.shape[0]):
+                y_pot = np.zeros(self.NObj)
+                for i in range(self.NObj):
+                    m, s = self.GP[i].predict(new_pts[k].reshape(1,-1), return_std=True)
+                    y_pot[i] = m + level*s
+
+                # Calculate f
+                f = self.__hv_contrib(pfa,y_pot,eps,ref_point)
+                idxs[k] = f
+
+            best_iter = np.argmax(idxs)
+            self.x_try = new_pts[best_iter]
+            dummy = self.space.observe_point(self.x_try)
+            self.y_Pareto, self.x_Pareto = self.space.ParetoSet()
+
+            '''
+            self.counter += 1
+
+            self.vprint(f"|PF| = {self.space.ParetoSize:4d} at"
+                        f" {self.counter:4d}"
+                        f" of {n_iter:4d}, w/ r = {self.NewProb:4.2f}")
+
+            if self.__save_partial:
+                for NFront in FrontSampling:
+                    if (self.counter % SaveInterval == 0) and \
+                            (NFront == FrontSampling[-1]):
+                        SaveFile = True
+                    else:
+                        SaveFile = False
+                    Ind = self.space.RS.choice(front.shape[0], NFront,
+                                               replace=False)
+                    PopInd = [pop[i] for i in Ind]
+                    self.__PrintOutput(front[Ind, :], PopInd,
+                                       SaveFile)
+            '''
+
+        mask = nondominated_pts(self.space.f)
+        pfa = self.space.f[mask, :]
+        pfs = self.space.x[mask, :]
+        return pfa, pfs
+
+
+
+
+
     # % maximize
     def maximize(self,
                  n_iter=100,
@@ -359,15 +448,17 @@ class MOBayesianOpt(object):
             if ReduceProb:
                 self.NewProb = prob * (1.0 - self.counter/n_iter)
 
+            #GP fit
             for i in range(self.NObj):
                 yy = self.space.f[:, i]
                 self.GP[i].fit(self.space.x, yy)
 
+            #Pareto Front calculation
             pop, logbook, front = NSGAII(self.NObj,
                                          self.__ObjectiveGP,
                                          self.pbounds,
                                          MU=n_pts)
-
+            # inserire smsego
             Population = np.asarray(pop)
             IndexF, FatorF = self.__LargestOfLeast(front, self.space.f)
             IndexPop, FatorPop = self.__LargestOfLeast(Population,
@@ -424,7 +515,7 @@ class MOBayesianOpt(object):
                     self.__PrintOutput(front[Ind, :], PopInd,
                                        SaveFile)
 
-        return front, np.asarray(pop)
+        return front, np.asarray(pop) #front:[n_pts,NObj] pop:[n_pts,x_space_shape]
 
     def __LargestOfLeast(self, front, F):
         NF = len(front)
@@ -623,3 +714,20 @@ class MOBayesianOpt(object):
         self.vprint("Read data from "+filename)
 
         return
+
+    def __hv_contrib(self,front,y_pot,eps,ref_point):
+        n_pts = front.shape[0]
+        p = 0
+        for i in range(n_pts):
+            # check epsilon dominance
+            if (np.min(y_pot <= front[i, :] + eps)):
+                front_prod, y_pot_prod = np.where(front[i,:] >= y_pot,front[i,:],y_pot)
+                p = -1 + np.prod(1 + front_prod - y_pot_prod) #calculate penalty
+
+        if (p == 0):
+            front_new = np.vstack((front,y_pot))
+            f = sms_hv(front_new, ref_point)
+        else:
+            f = p
+
+        return f
