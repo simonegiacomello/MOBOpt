@@ -42,30 +42,27 @@ def plot_1dgp(fig, ax, space, iterations, Front, last):
     fig.canvas.draw()
     fig.canvas.flush_events()
 
-def nondominated_pts(pts, return_mask = True):
+def nondominated_pts(pts):
     """
     Find the pareto-efficient points
-    :param costs: An (n_points, n_costs) array
-    :param return_mask: True to return a mask
+    :param pts: An (n_points, n_objectives) array
     :return: An array of indices of pareto-efficient points.
         If return_mask is True, this will be an (n_points, ) boolean array
         Otherwise it will be a (n_efficient_points, ) integer array of indices.
     """
-    is_efficient = np.arange(pts.shape[0])
+    nondom_pts = pts.copy()
+    nondom_idxs = np.arange(pts.shape[0])
     n_points = pts.shape[0]
-    next_point_index = 0  # Next index in the is_efficient array to search for
-    while next_point_index<len(pts):
-        nondominated_point_mask = np.any(pts>pts[next_point_index], axis=1)
+    next_point_index = 0  # Next index in the nondom_idxs array to search for
+    while next_point_index<nondom_pts.shape[0]:
+        nondominated_point_mask = np.any(nondom_pts>nondom_pts[next_point_index], axis=1)
         nondominated_point_mask[next_point_index] = True
-        is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
-        pts = pts[nondominated_point_mask]
+        nondom_idxs = nondom_idxs[nondominated_point_mask]  # Remove dominated points
+        nondom_pts = nondom_pts[nondominated_point_mask]
         next_point_index = np.sum(nondominated_point_mask[:next_point_index])+1
-    if return_mask:
-        is_efficient_mask = np.zeros(n_points, dtype = bool)
-        is_efficient_mask[is_efficient] = True
-        return is_efficient_mask
-    else:
-        return is_efficient
+    nondom_mask = np.zeros(n_points, dtype = bool)
+    nondom_mask[nondom_idxs] = True
+    return nondom_mask
 
 
 def sms_hv(front, ref=None):

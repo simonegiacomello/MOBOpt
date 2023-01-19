@@ -260,6 +260,32 @@ class MOBayesianOpt(object):
                         n_iter=100,
                         n_pts=100
                         ):
+        """
+        input
+        =====
+
+        n_iter -- int (default 100)
+            number of iterations of the method
+
+        n_pts -- int (default 100)
+            number of randomly generated points at each step
+
+        return front, pop
+        =================
+
+        front -- numpy array: (Pareto Front size, NObj)
+            effective Pareto front of the points selected by SMS-EGO
+
+        pop -- numpy array: (Pareto Front size, number of dimensions)
+            Pareto Set found by SMS-EGO: population of points in search space
+
+
+        Outputs
+        =======
+        self.y_Pareto :: list of non-dominated points in objective space
+        self.x_Pareto :: list of non-dominated points in search space
+        """
+
         # Allocate necessary space
         if self.N_init_points + n_iter > self.space._n_alloc_rows:
             self.space._allocate(self.N_init_points + n_iter)
@@ -267,6 +293,7 @@ class MOBayesianOpt(object):
 
         self.vprint("Start optimization loop")
 
+        #Computation of the confidence bound
         level = -norm.ppf(0.5*(0.5**(1/self.NObj)))
 
         for i in range(n_iter):
@@ -277,70 +304,45 @@ class MOBayesianOpt(object):
                 yy = self.space.f[:, j]
                 self.GP[j].fit(self.space.x, yy)
 
-            # Pareto Front calculation with Pygmo
+            # Pareto Front calculation with helper function
             mask = nondominated_pts(self.space.f)
-            pfa = self.space.f[mask,:]
-            pfs = self.space.x[mask,:]
+            #Pareto Front approximation
+            pfa = self.space.f[mask, :]
             # Generation of the evaluation points randomly
             new_pts = np.asarray(self.space.random_points(n_pts))
-            #new_pts, _, _ = NSGAII(self.NObj,
-            #                             self.__ObjectiveGP,
-            #                             self.pbounds,
-            #                             MU=n_pts)
-
             # Epsilon
             c = 1 - 1/(2**self.NObj)
             eps = (pfa.max() - pfa.min())/(n_pts + c*(n_iter - i))
 
             # Reference Point
             ref_point = list(np.max(pfa, axis=0) + 1)
-            # Initialize hypervolume
-            #new_pts = np.asarray(new_pts)
-            HV = sms_hv(pfa, ref_point)
-            idxs = np.zeros(shape=(len(new_pts)))
+
+            contributions = np.zeros(shape=(len(new_pts)))
 
             for k in range(new_pts.shape[0]):
                 y_pot = np.zeros(self.NObj)
-                for i in range(self.NObj):
-                    m, s = self.GP[i].predict(new_pts[k].reshape(1,-1), return_std=True)
-                    y_pot[i] = m + level*s
+                for n in range(self.NObj):
+                    m, s = self.GP[n].predict(new_pts[k].reshape(1, -1), return_std=True)
+                    y_pot[n] = m + level*s
 
                 # Calculate f
-                f = self.__hv_contrib(pfa,y_pot,eps,ref_point)
-                idxs[k] = f
+                f = self.penalty(pfa, y_pot, eps, ref_point)
+                contributions[k] = f
 
-            best_iter = np.argmax(idxs)
+            best_iter = np.argmax(contributions)
             self.x_try = new_pts[best_iter]
-            dummy = self.space.observe_point(self.x_try)
+
+            #Observation of the selected point
+            _ = self.space.observe_point(self.x_try)
+
+            #Update of the Pareto Front
             self.y_Pareto, self.x_Pareto = self.space.ParetoSet()
 
-            '''
-            self.counter += 1
-
-            self.vprint(f"|PF| = {self.space.ParetoSize:4d} at"
-                        f" {self.counter:4d}"
-                        f" of {n_iter:4d}, w/ r = {self.NewProb:4.2f}")
-
-            if self.__save_partial:
-                for NFront in FrontSampling:
-                    if (self.counter % SaveInterval == 0) and \
-                            (NFront == FrontSampling[-1]):
-                        SaveFile = True
-                    else:
-                        SaveFile = False
-                    Ind = self.space.RS.choice(front.shape[0], NFront,
-                                               replace=False)
-                    PopInd = [pop[i] for i in Ind]
-                    self.__PrintOutput(front[Ind, :], PopInd,
-                                       SaveFile)
-            '''
-
         mask = nondominated_pts(self.space.f)
-        pfa = self.space.f[mask, :]
-        pfs = self.space.x[mask, :]
-        return pfa, pfs
+        front = self.space.f[mask, :]
+        pop = self.space.x[mask, :]
 
-
+        return front, pop
 
 
 
@@ -515,7 +517,7 @@ class MOBayesianOpt(object):
                     self.__PrintOutput(front[Ind, :], PopInd,
                                        SaveFile)
 
-        return front, np.asarray(pop) #front:[n_pts,NObj] pop:[n_pts,x_space_shape]
+        return front, np.asarray(pop)
 
     def __LargestOfLeast(self, front, F):
         NF = len(front)
@@ -715,19 +717,47 @@ class MOBayesianOpt(object):
 
         return
 
-    def __hv_contrib(self,front,y_pot,eps,ref_point):
+    def penalty(self, front, y_pot, eps, ref_point):
+
+        """
+        Penalty calculation
+
+        input
+        =====
+
+        front -- numpy array
+            current Pareto Front points
+
+        y_pot -- numpy array
+            generated by the Gaussian Process from the candidate point x
+
+        eps -- float
+            tolerance for epsilon dominance
+
+        ref_point -- numpy array
+            reference point for the hypervolume computation
+
+        Output
+        =====
+
+        f -- float
+            computed hypervolume contribution in case of non epsilon dominance,
+            otherwise computed penalty
+
+        """
         n_pts = front.shape[0]
-        p = 0
+        penalty = 0
         for i in range(n_pts):
             # check epsilon dominance
-            if (np.min(y_pot <= front[i, :] + eps)):
-                front_prod, y_pot_prod = np.where(front[i,:] >= y_pot,front[i,:],y_pot)
-                p = -1 + np.prod(1 + front_prod - y_pot_prod) #calculate penalty
+            if np.all(y_pot <= front[i, :] + eps):
+                front_prod, y_pot_prod = np.where(front[i, :] >= y_pot, front[i, :], y_pot)
+                # calculate penalty
+                penalty = -1 + np.prod(1 + front_prod - y_pot_prod)
 
-        if (p == 0):
-            front_new = np.vstack((front,y_pot))
+        if penalty == 0:
+            front_new = np.vstack((front, y_pot))
             f = sms_hv(front_new, ref_point)
         else:
-            f = p
+            f = penalty
 
         return f
