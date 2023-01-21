@@ -46,9 +46,8 @@ def nondominated_pts(pts):
     """
     Find the pareto-efficient points
     :param pts: An (n_points, n_objectives) array
-    :return: An array of indices of pareto-efficient points.
-        If return_mask is True, this will be an (n_points, ) boolean array
-        Otherwise it will be a (n_efficient_points, ) integer array of indices.
+    :return: An (n_points, ) boolean array in which the indices of the pareto-efficient
+            points are set equal to True
     """
     nondom_pts = pts.copy()
     nondom_idxs = np.arange(pts.shape[0])
