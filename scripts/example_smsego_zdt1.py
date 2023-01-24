@@ -44,14 +44,7 @@ def main():
     PB = np.asarray([[0, 1]]*NParam)
 
     f1 = np.linspace(0, 1, 1000)
-
-    # computation of the multiplying constant of f2
-    g = 1
-    n = len(f1)
-    for i in range(3, n):
-        g = g + (9 * f1[i]) / (n - 2)
-
-    f2 = g*(1-np.sqrt(f1))
+    f2 = (1-np.sqrt(f1))
 
     Optimize = mo.MOBayesianOpt(target=target,
                                 NObj=2,
