@@ -258,7 +258,7 @@ class MOBayesianOpt(object):
 
     def maximize_smsego(self,
                         n_iter=100,
-                        n_pts=100
+                        n_pts=10000
                         ):
         """
         input
@@ -267,8 +267,8 @@ class MOBayesianOpt(object):
         n_iter -- int (default 100)
             number of iterations of the method
 
-        n_pts -- int (default 100)
-            number of randomly generated points at each step
+        n_pts -- int (default 10000)
+            number of generated points at each step by Latin Hypercube Sampling
 
         return front, pop
         =================
@@ -325,7 +325,11 @@ class MOBayesianOpt(object):
             #Pareto Front approximation
             pfa = self.space.f[mask, :]
             # Generation of the evaluation points randomly
-            new_pts = np.asarray(self.space.random_points(n_pts))
+            #new_pts = np.asarray(self.space.random_points(n_pts))
+
+            #Generation of the evaluation point susing latin hypercube sampling
+            new_pts = np.asarray(self.space.lhs_points(n_pts))
+
             # Epsilon
             c = 1 - 1/(2**self.NObj)
             eps = (pfa.max() - pfa.min())/(n_pts + c*(n_iter - i))
@@ -476,7 +480,6 @@ class MOBayesianOpt(object):
                                          self.__ObjectiveGP,
                                          self.pbounds,
                                          MU=n_pts)
-            # inserire smsego
             Population = np.asarray(pop)
             IndexF, FatorF = self.__LargestOfLeast(front, self.space.f)
             IndexPop, FatorPop = self.__LargestOfLeast(Population,

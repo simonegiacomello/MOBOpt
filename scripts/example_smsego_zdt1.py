@@ -26,7 +26,7 @@ def main():
                         required=True)
     parser.add_argument("-ni", dest="NInit", type=int, metavar="NInit",
                         help="Number of initialization points",
-                        required=False, default=5)
+                        required=False, default=10)
     parser.add_argument("-v", dest="verbose", action='store_true',
                         help="Verbose")
     parser.add_argument("--filename", dest="Filename", type=str,
