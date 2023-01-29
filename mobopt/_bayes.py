@@ -258,7 +258,7 @@ class MOBayesianOpt(object):
 
     def maximize_smsego(self,
                         n_iter=100,
-                        n_pts=10000
+                        n_pts=100
                         ):
         """
         input
@@ -267,7 +267,7 @@ class MOBayesianOpt(object):
         n_iter -- int (default 100)
             number of iterations of the method
 
-        n_pts -- int (default 10000)
+        n_pts -- int (default 100)
             number of generated points at each step by Latin Hypercube Sampling
 
         return front, pop
