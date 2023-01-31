@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-
+from pyDOE import lhs
 
 class TargetSpace(object):
     """
@@ -338,3 +338,20 @@ class TargetSpace(object):
         self._F = Data["F"]
 
         return
+
+    def lhs_points(self, n_pts):
+        """
+        Generate a set of points using Latin Hypercube Sampling
+
+        Keyword Arguments:
+        n_pts -- number of points to generate
+        """
+
+        #  Generate the points
+        X = lhs(self.NParam, samples=n_pts)
+
+        #  Scale the points
+        for i in range(self.NParam):
+            X[:, i] = X[:, i] * (self.pbounds[i][1] - self.pbounds[i][0]) + self.pbounds[i][0]
+
+        return X
