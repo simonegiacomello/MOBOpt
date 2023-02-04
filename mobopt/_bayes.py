@@ -258,7 +258,7 @@ class MOBayesianOpt(object):
 
     def maximize_smsego(self,
                         n_iter=100,
-                        n_pts=100
+                        n_pts=10000
                         ):
         """
         input
@@ -268,7 +268,7 @@ class MOBayesianOpt(object):
             number of iterations of the method
 
         n_pts -- int (default 100)
-            number of generated points at each step by Latin Hypercube Sampling
+            number of randomly generated points at each step
 
         return front, pop
         =================
@@ -327,7 +327,7 @@ class MOBayesianOpt(object):
             # Generation of the evaluation points randomly
             #new_pts = np.asarray(self.space.random_points(n_pts))
 
-            #Generation of the evaluation point susing latin hypercube sampling
+            #Generation of the evaluation point using latin hypercube sampling
             new_pts = np.asarray(self.space.lhs_points(n_pts))
 
             # Epsilon
