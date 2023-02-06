@@ -12,9 +12,9 @@ def GD(S, P):
     d = np.empty(NS)
 
     for i in range(NS):
-            d[i] = np.asarray(np.sqrt((S[i, :]-P)**2)).min()
+        d[i] = np.asarray(np.sqrt((S[i, :]-P)**2)).min()
 
-    gd = np.sqrt(np.sum(d**2)) / NS
+    gd = np.sqrt(np.sum(d**2))
     return gd
 
 
