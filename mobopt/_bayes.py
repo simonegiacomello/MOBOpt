@@ -312,9 +312,6 @@ class MOBayesianOpt(object):
         #Computation of the confidence bound
         level = -norm.ppf(0.5*(0.5**(1/self.NObj)))
 
-        #Plot of GP prior
-        #self.space.plot_gp(self.GP, n_samples=2, n_eval_pts=50, title="prior")
-
         for i in range(n_iter):
 
             self.vprint(i, " of ", n_iter)
@@ -365,9 +362,6 @@ class MOBayesianOpt(object):
         front = self.space.f[mask, :]
         pop = self.space.x[mask, :]
 
-
-        #Plot 1st component of X against GP[1]
-        self.space.plot_gp(self.GP, n_samples=2, n_eval_pts=50, title="posterior")
 
         return front, pop
 
