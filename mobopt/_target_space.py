@@ -388,33 +388,36 @@ class TargetSpace(object):
 
         fig, ax = plt.subplots(1, 2, figsize=(20, 10))
 
+        Xplot = np.sort(X[:, 0])
+        Y_component = np.argsort(X[:, 0])
+
         for dim in range(self.NObj):
 
             for idx in range(n_samples):
                 ax[dim].plot(
-                    np.sort(X[:,0]),
-                    -y_samples[dim, np.argsort(X[:, 0]), idx],
+                    Xplot,
+                    -y_samples[dim, Y_component, idx],
                     linestyle="--",
                     alpha=0.7,
                     label=f"Sampled function #{idx + 1}"
                 )
 
-            ax[dim].plot(np.sort(X[:, 0]), -y_mean[dim, np.argsort(X[:, 0])], label="Mean", color="black")
+            ax[dim].plot(Xplot, -y_mean[dim, Y_component], label="Mean", color="black")
             ax[dim].fill_between(
-                np.sort(X[:, 0]),
-                -y_mean[dim, np.argsort(X[:, 0])] - y_std[dim, np.argsort(X[:, 0])],
-                -y_mean[dim, np.argsort(X[:, 0])] + y_std[dim, np.argsort(X[:, 0])],
+                Xplot,
+                -y_mean[dim, Y_component] - y_std[dim, Y_component],
+                -y_mean[dim, Y_component] + y_std[dim, Y_component],
                 alpha=0.1,
                 label="Standard deviation"
             )
-            ax[dim].set_xlabel("X")
-            ax[dim].set_ylabel("f"+str(dim+1))
+            ax[dim].set_xlabel("X", fontsize=18)
+            ax[dim].set_ylabel("f"+str(dim+1), fontsize=18)
             if title.endswith("posterior"):
                 ax[dim].scatter(np.sort(self._X[:, 0]), -self._F[np.argsort(self._X[:, 0]), dim], label="Observations",
                            color="red", alpha=0.5)
 
             ax[dim].legend(loc=0)
 
-            ax[dim].set_title(title)
+            ax[dim].set_title(title, fontsize=20)
 
-        fig.savefig("gp_" + title + ".png")
+        fig.savefig("gp_" + title + ".png", bbox_inches="tight")

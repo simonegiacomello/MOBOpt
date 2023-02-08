@@ -189,6 +189,8 @@ class MOBayesianOpt(object):
                                  RandomSeed=RandomSeed,
                                  verbose=self.verbose)
 
+        np.random.seed(RandomSeed)
+
         if self.Picture and self.NObj == 2:
             self.fig, self.ax = pl.subplots(1, 1, figsize=(5, 4))
             self.fig.show()
