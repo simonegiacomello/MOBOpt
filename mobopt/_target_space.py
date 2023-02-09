@@ -384,7 +384,7 @@ class TargetSpace(object):
 
         for i in range(self.NObj):
             y_mean[i], y_std[i] = gpr_model[i].predict(X, return_std=True)
-            y_samples[i] = gpr_model[i].sample_y(X, n_samples=n_samples)
+            y_samples[i] = gpr_model[i].sample_y(X, n_samples=n_samples, random_state=i+self.RS)
 
         fig, ax = plt.subplots(1, self.NObj, figsize=(20, 10))
         Xplot = np.sort(X[:, 0])

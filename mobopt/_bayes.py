@@ -173,8 +173,7 @@ class MOBayesianOpt(object):
         self.GP = [None] * self.NObj
         for i in range(self.NObj):
             self.GP[i] = GPR(kernel=kernel,
-                             n_restarts_optimizer=self.n_rest_opt,
-                             random_state = RandomSeed)
+                             n_restarts_optimizer=self.n_rest_opt)
 
         # store starting points
         self.init_points = []
