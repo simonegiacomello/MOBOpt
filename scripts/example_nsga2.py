@@ -40,10 +40,14 @@ def main():
     parser.add_argument("--rprob", dest="Reduce", action="store_true",
                         help="If present reduces prob linearly" +
                         " along simulation")
+    parser.add_argument("-seed", dest="seed", type=int, metavar="seed",
+                        help="Seed for random number generator",
+                        required=False, default=10)
+
     parser.set_defaults(Reduce=False)
 
     args = parser.parse_args()
-
+    seed = args.seed
     NParam = args.ND
     NIter = args.NI
     if 0 <= args.Prob <= 1.0:
@@ -71,7 +75,7 @@ def main():
                                 n_restarts_optimizer=args.NRest,
                                 Filename=Filename,
                                 max_or_min='min',
-                                RandomSeed=10)
+                                RandomSeed=seed)
 
     Optimize.initialize(init_points=N_init)
 

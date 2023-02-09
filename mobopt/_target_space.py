@@ -23,7 +23,6 @@ class TargetSpace(object):
         self.vprint = print if verbose else lambda *a, **k: None
 
         self.RS = np.random.RandomState(seed=RandomSeed)
-        self.seed = RandomSeed
 
         self.target_function = target_function
         self.NObj = NObj
@@ -358,7 +357,7 @@ class TargetSpace(object):
 
         return X
 
-    def plot_gp(self, gpr_model, n_eval_pts, title, n_samples=2):
+    def plot_gp(self, gpr_model, n_eval_pts, title, n_samples=2, seed=10):
         """
         Plot n_samples inside pbounds drawn from the Gaussian process model in input.
 
@@ -385,7 +384,7 @@ class TargetSpace(object):
 
         for i in range(self.NObj):
             y_mean[i], y_std[i] = gpr_model[i].predict(X, return_std=True)
-            y_samples[i] = gpr_model[i].sample_y(X, n_samples=n_samples, random_state=self.seed+i)
+            y_samples[i] = gpr_model[i].sample_y(X, n_samples=n_samples, random_state=seed+i)
 
         fig, ax = plt.subplots(1, self.NObj, figsize=(20, 10))
         Xplot = np.sort(X[:, 0])

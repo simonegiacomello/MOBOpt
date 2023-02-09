@@ -20,6 +20,9 @@ parser.add_argument("--target", dest="target", type=str,
 parser.add_argument("-neval", dest="neval", type=int, metavar="neval",
                     help="Number of random points for GP evaluation",
                     required=False, default=20)
+parser.add_argument("-seed", dest="seed", type=int, metavar="seed",
+                    help="Seed for random number generator",
+                    required=False, default=10)
 
 parser.set_defaults(Reduce=False)
 
@@ -29,6 +32,7 @@ NParam = args.ND
 N_init = args.NInit
 n_pts = args.npts
 neval = args.neval
+seed = args.seed
 target = targets.target(args.target.lower(), NParam)
 f1 = target.f1
 f2 = target.f2
@@ -44,15 +48,15 @@ for NIter in iterations:
                                 pbounds=PB,
                                 MetricsPS = False,
                                 max_or_min='min',
-                                RandomSeed=10)
+                                RandomSeed=seed)
 
     Optimize.initialize(init_points=N_init)
 
     if NIter == 10:
-        Optimize.space.plot_gp(gpr_model=Optimize.GP, n_eval_pts=neval, title=args.target.lower()+"_prior")
+        Optimize.space.plot_gp(gpr_model=Optimize.GP, n_eval_pts=neval, title=args.target.lower()+"_prior", seed=seed+NIter)
 
     front, pop = Optimize.maximize_smsego(n_iter=NIter, n_pts=n_pts)
 
     title = args.target.lower() + "_iter=" + str(NIter) + "_posterior"
-    Optimize.space.plot_gp(gpr_model=Optimize.GP, n_eval_pts=neval, title=title)
+    Optimize.space.plot_gp(gpr_model=Optimize.GP, n_eval_pts=neval, title=title, seed=seed+NIter)
 

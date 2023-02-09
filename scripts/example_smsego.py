@@ -31,6 +31,10 @@ def main():
     parser.add_argument("--target", dest="target", type=str,
                         default="ZDT1",
                         help="Target function name")
+    parser.add_argument("-seed", dest="seed", type=int, metavar="seed",
+                        help="Seed for random number generator",
+                        required=False, default=10)
+
     parser.set_defaults(Reduce=False)
 
     args = parser.parse_args()
@@ -40,6 +44,7 @@ def main():
     N_init = args.NInit
     n_pts = args.npts
     verbose = args.verbose
+    seed = args.seed
     target = targets.target(args.target.lower(),NParam)
     f1 = target.f1
     f2 = target.f2
@@ -54,11 +59,11 @@ def main():
                                 pbounds=PB,
                                 Picture=True,
                                 MetricsPS=False,
-                                TPF=None,
+                                TPF=np.asarray([f1, f2]).T,
                                 verbose=verbose,
                                 Filename=Filename,
                                 max_or_min='min',
-                                RandomSeed=10)
+                                RandomSeed=seed)
 
     Optimize.initialize(init_points=N_init)
 
