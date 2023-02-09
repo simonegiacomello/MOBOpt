@@ -94,7 +94,7 @@ class MOBayesianOpt(object):
             analogue) if available or seed from the clock otherwise.
 
         kernel -- kernel object
-            kernel object to be passed to the gausian process
+            kernel object to be passed to the gaussian process
             regressor, if None, the default `Matern(nu=1.5)` is used
 
             For valid kernel objects, visit:
@@ -173,7 +173,8 @@ class MOBayesianOpt(object):
         self.GP = [None] * self.NObj
         for i in range(self.NObj):
             self.GP[i] = GPR(kernel=kernel,
-                             n_restarts_optimizer=self.n_rest_opt)
+                             n_restarts_optimizer=self.n_rest_opt,
+                             random_state = RandomSeed)
 
         # store starting points
         self.init_points = []
@@ -189,7 +190,6 @@ class MOBayesianOpt(object):
                                  RandomSeed=RandomSeed,
                                  verbose=self.verbose)
 
-        np.random.seed(RandomSeed)
 
         if self.Picture and self.NObj == 2:
             self.fig, self.ax = pl.subplots(1, 1, figsize=(5, 4))
@@ -359,6 +359,8 @@ class MOBayesianOpt(object):
 
             #Update of the Pareto Front
             self.y_Pareto, self.x_Pareto = self.space.ParetoSet()
+
+
 
         mask = nondominated_pts(self.space.f)
         front = self.space.f[mask, :]
@@ -567,6 +569,7 @@ class MOBayesianOpt(object):
             HausDist = np.nan
 
         Cover = Coverage(front)
+
         HV = hypervolume(pop, [11.0]*self.NObj)
 
         if self.MetricsPS and self.Metrics:
