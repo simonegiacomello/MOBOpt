@@ -2,6 +2,7 @@
 
 import numpy as np
 from pyDOE import lhs
+import matplotlib.pyplot as plt
 
 class TargetSpace(object):
     """
@@ -355,3 +356,66 @@ class TargetSpace(object):
             X[:, i] = X[:, i] * (self.pbounds[i][1] - self.pbounds[i][0]) + self.pbounds[i][0]
 
         return X
+
+    def plot_gp(self, gpr_model, n_eval_pts, title, n_samples=2, seed=10):
+        """
+        Plot n_samples inside pbounds drawn from the Gaussian process model in input.
+
+        If the Gaussian process model is not trained then the drawn samples are
+        drawn from the prior distribution. Otherwise, the samples are drawn from
+        the posterior distribution.
+        """
+        X = np.asarray(self.lhs_points(n_eval_pts))
+
+        if title.endswith("prior"):
+            y_mean = np.zeros((self.NObj, n_eval_pts))
+            y_std = np.zeros((self.NObj, n_eval_pts))
+            y_samples = np.zeros((self.NObj, n_eval_pts, n_samples))
+
+        elif title.endswith("posterior"):
+            l = self._X.shape[0]
+            y_mean = np.zeros((self.NObj, l + n_eval_pts))
+            y_std = np.zeros((self.NObj, l + n_eval_pts))
+            y_samples = np.zeros((self.NObj, l + n_eval_pts, n_samples))
+            X = np.append(X, self._X, axis=0)
+
+        else:
+            raise ValueError("title must end with 'prior' or 'posterior'")
+
+        for i in range(self.NObj):
+            y_mean[i], y_std[i] = gpr_model[i].predict(X, return_std=True)
+            y_samples[i] = gpr_model[i].sample_y(X, n_samples=n_samples, random_state=seed+i)
+
+        fig, ax = plt.subplots(1, self.NObj, figsize=(20, 10))
+        Xplot = np.sort(X[:, 0])
+        Y_component = np.argsort(X[:, 0])
+        for dim in range(self.NObj):
+
+            for idx in range(n_samples):
+                ax[dim].plot(
+                    Xplot,
+                    -y_samples[dim, Y_component, idx],
+                    linestyle="--",
+                    alpha=0.7,
+                    label=f"Sampled function #{idx + 1}"
+                )
+
+            ax[dim].plot(Xplot, -y_mean[dim, Y_component], label="Mean", color="black")
+            ax[dim].fill_between(
+                Xplot,
+                -y_mean[dim, Y_component] - y_std[dim, Y_component],
+                -y_mean[dim, Y_component] + y_std[dim, Y_component],
+                alpha=0.1,
+                label="Standard deviation"
+            )
+            ax[dim].set_xlabel("X", fontsize=18)
+            ax[dim].set_ylabel("f" + str(dim + 1), fontsize=18)
+            if title.endswith("posterior"):
+                ax[dim].scatter(np.sort(self._X[:, 0]), -self._F[np.argsort(self._X[:, 0]), dim], label="Observations",
+                           color="red", alpha=0.5)
+
+            ax[dim].legend(loc=0)
+
+            ax[dim].set_title(title, fontsize=20)
+
+        fig.savefig("gp_" + title + ".png", bbox_inches="tight")

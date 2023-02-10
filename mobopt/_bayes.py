@@ -94,7 +94,7 @@ class MOBayesianOpt(object):
             analogue) if available or seed from the clock otherwise.
 
         kernel -- kernel object
-            kernel object to be passed to the gausian process
+            kernel object to be passed to the gaussian process
             regressor, if None, the default `Matern(nu=1.5)` is used
 
             For valid kernel objects, visit:
@@ -189,6 +189,7 @@ class MOBayesianOpt(object):
                                  RandomSeed=RandomSeed,
                                  verbose=self.verbose)
 
+
         if self.Picture and self.NObj == 2:
             self.fig, self.ax = pl.subplots(1, 1, figsize=(5, 4))
             self.fig.show()
@@ -258,7 +259,7 @@ class MOBayesianOpt(object):
 
     def maximize_smsego(self,
                         n_iter=100,
-                        n_pts=100
+                        n_pts=10000
                         ):
         """
         input
@@ -268,7 +269,7 @@ class MOBayesianOpt(object):
             number of iterations of the method
 
         n_pts -- int (default 100)
-            number of generated points at each step by Latin Hypercube Sampling
+            number of randomly generated points at each step
 
         return front, pop
         =================
@@ -327,7 +328,7 @@ class MOBayesianOpt(object):
             # Generation of the evaluation points randomly
             #new_pts = np.asarray(self.space.random_points(n_pts))
 
-            #Generation of the evaluation point susing latin hypercube sampling
+            #Generation of the evaluation point using latin hypercube sampling
             new_pts = np.asarray(self.space.lhs_points(n_pts))
 
             # Epsilon
@@ -358,9 +359,12 @@ class MOBayesianOpt(object):
             #Update of the Pareto Front
             self.y_Pareto, self.x_Pareto = self.space.ParetoSet()
 
+
+
         mask = nondominated_pts(self.space.f)
         front = self.space.f[mask, :]
         pop = self.space.x[mask, :]
+
 
         return front, pop
 
@@ -564,6 +568,7 @@ class MOBayesianOpt(object):
             HausDist = np.nan
 
         Cover = Coverage(front)
+
         HV = hypervolume(pop, [11.0]*self.NObj)
 
         if self.MetricsPS and self.Metrics:
