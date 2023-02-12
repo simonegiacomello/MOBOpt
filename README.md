@@ -10,25 +10,29 @@ Multi-Objective Bayesian Optimization
   * scikit-learn 0.22
   * deap 1.3
   * scipy 1.1
+  * pyDOE 0.3.8 (Latin Hypercube Sampling)
 
-## Instalation
+## Installation
 
-  *  Clone this repo to your local machine using `https://github.com/ppgaluzio/MOBOpt.git`
+  *  Clone this repo to your local machine using `https://github.com/simonegiacomello/MOBOpt.git`
   *  Run `python3 setup.py install`
-  * Using pip `pip3 install https://github.com/ppgaluzio/MOBOpt/archive/master.zip`
+  * Using pip `pip3 install https://github.com/simonegiacomello/MOBOpt/archive/master.zip`
 
 ## Usage
 
-Check [wiki](https://github.com/ppgaluzio/MOBOpt/wiki) for basic usage and documentation
+Check [wiki](https://github.com/ppgaluzio/MOBOpt/wiki) for basic usage and documentation of the original MOBOpt package.
 
 ## Analysis
 
-Files `PrintFront.py` and `Analisa.py`, in the scripts folder, are
-examples of how to analyze the output of the method
+Files `example_smsego.py` and `example_nsga2.py` are used to generate the results with SMS-EGO
+and NSGA-II respectively.
 
+File `PrintFront.py` is used to print together the True Pareto Front and the fronts obtained with SMS-EGO and NSGA-II.
+
+File `posterior_plots.py` is used to print prior and posterior distributions of the Gaussian Processes after 10, 30 and 50 iterations of SMS-EGO.
 ## Cite
 
-To cite MOBOpt, please refer to our [paper](https://doi.org/10.1016/j.softx.2020.100520)
+To cite the original MOBOpt, please refer to the [paper](https://doi.org/10.1016/j.softx.2020.100520)
 
 ```
 @article{GALUZIO2020100520,
